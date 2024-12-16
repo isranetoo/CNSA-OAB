@@ -1,0 +1,56 @@
+programa vai nos arquivos JSON da pasta resultados_CNA_detalhes ver se tem sociedade ("Sociedades":), se nao tiver responda com NULL, se tiver sociedade coletar o link de "Url":
+se tiver some o https://cna.oab.org.br/ + o link coletado, em seguida faca o post deste link completo, irar cair no CNSA com as informcaoes do escritorio, em "Preview"
+terar todas as infos do escritorio e seus socios exemplo: 
+
+{
+  "Success": true,
+  "Data": {
+    "Insc": "9963",
+    "CodiSituSoci": 2,
+    "DscSituSoci": "Ativo",
+    "NomeSoci": "DUCHOVNI, LIMA, ASSIS & CAMARGO SOCIEDADE DE ADVOGADOS  ",
+    "Endereco": "RUA DOUTOR ALEXANDER FLEMING, Nº 930 1  ANDAR, NOVA CAMPINAS\u003Cbr/\u003ECAMPINAS - SP\u003Cbr/\u003E13092-140",
+    "Telefones": "(19) 3258-7535",
+    "UF": "São Paulo                      - SP",
+    "Bandeira": "/Content/Images/Flags/SP.png",
+    "Socios": [
+      {
+        "Nome": "ERIC KELLER TAVARES DE CAMARGO",
+        "NomeSocial": "-",
+        "Tipo": "Sócio",
+        "CNALink": "/Home/CNALink?bf6y8Zul49EMidkgVa0nd4nxo1DzvGFCuJuelyUrqTNPxvWYvK71I3D94Pbm3x8ibsU7rjriezzv4nnZFiQOog%3D%3D"
+      },
+      {
+        "Nome": "IAN OLIVEIRA DE ASSIS",
+        "NomeSocial": "-",
+        "Tipo": "Sócio",
+        "CNALink": "/Home/CNALink?1prl86vCljGtO%2Bkjqvb8O6jLKDA2cwgNFwUihPHpogch1GnSgch6sWCoPapMlrL7e7DS%2FeZX2y%2FM1DpmsH8Quw%3D%3D"
+      },
+      {
+        "Nome": "MAIRAUÊ DE ARAUJO TEIXEIRA STRAZZACAPPA",
+        "NomeSocial": "-",
+        "Tipo": "Sócio",
+        "CNALink": "/Home/CNALink?2muQl%2F9LQDPyTO7XcPll1A1yTHbzfUreyPfA7%2BzbVDw1mXBiHOC%2FaY7HODW7COvR62Qo49ScncJkZnt4e%2B3vfg%3D%3D"
+      },
+      {
+        "Nome": "MARCELA FAELLI COLUCCINI PIANTONI",
+        "NomeSocial": "-",
+        "Tipo": "Sócio",
+        "CNALink": "/Home/CNALink?TjBuJibSl2IgKwrQVvkrL3X2NLiJ28eW9z8eRHQ6Id%2Feb24bhjBtFhN%2F69UNvWl97qBFC3uMXLedrDpOFT%2F4kA%3D%3D"
+      },
+      {
+        "Nome": "MARCELO DUCHOVNI SILVA",
+        "NomeSocial": "-",
+        "Tipo": "Sócio",
+        "CNALink": "/Home/CNALink?l%2BYQ45w4ay9kVLGanjV7oH5rVHF2TMVmvnMH3lcUqGQKqkTAn%2BvnlY%2BplTjqhpmphnQakkm%2BzayCtdc8JBbOAg%3D%3D"
+      },
+      {
+        "Nome": "RAFAEL MENDES DE LIMA",
+        "NomeSocial": "-",
+        "Tipo": "Sócio",
+        "CNALink": "/Home/CNALink?I4mLONCkKHLK%2FieFc3mlOCjJtQXsrNDE8nCj74YA5zRcQMY8xDjaROYGrZ0%2F3aifU5f9SBS9IPa3p%2BPTpujRhw%3D%3D"
+      }
+    ]
+  },
+  "PushUrl": "/?1TB7HmsAbcIuDb%2FgL%2BlHxA%3D%3D"
+}
