@@ -79,3 +79,11 @@ def processar_arquivos():
             print(f"Arquivo processado e salvo em: {caminho_saida}")
 if __name__ == "__main__":
     processar_arquivos()
+
+
+
+
+    _ga=GA1.3.763589045.1734364106; _gid=GA1.3.226908473.1734364106; _gcl_au=1.1.1624817779.1734371515; _fbp=fb.2.1734371521320.497443166349660016; _ga_XLN2NL6CX0=GS1.3.1734371521.1.0.1734371521.0.0.0; _ga_RV21FK2PS5=GS1.3.1734453170.5.1.1734454849.0.0.0
+
+
+agora com o link coletetado pegue as informacoes do response 
