@@ -2,7 +2,7 @@ import os
 import json
 
 PASTA_ENTRADA = "resultados_CNSA_detalhes"
-ARQUIVO_SAIDA = "resultado_final.json"
+ARQUIVO_SAIDA = "resultado_sociedade_CNSA.json"
 
 def juntar_arquivo_json():
     """ """

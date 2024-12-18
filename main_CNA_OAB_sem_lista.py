@@ -158,6 +158,7 @@ def main():
     executar_script('separador.py')
     executar_script('CNSA_OAB_selenium.py')
     executar_script('compilador.py')
+    executar_script('numero_e_resultado.py')
 
 if __name__ == "__main__":
     main()

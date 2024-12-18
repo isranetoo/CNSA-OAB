@@ -65,6 +65,8 @@ def processar_arquivos():
                         conteudo_telefone = telefone.text
                         telefone_tratado = conteudo_telefone.replace("Telefones:\n", "")
 
+                        situacao_escritorio = driver.find_element(By.XPATH, '//*[@id="bodyContent"]/div[3]/div/div/div[2]/div[3]/span')
+
                         socios = []
                         indice = 1
                         while True:
@@ -73,7 +75,7 @@ def processar_arquivos():
                                 elemento_socio = driver.find_element(By.XPATH, xpath_socio)
                                 socios.append(elemento_socio.text)
                                 indice += 1
-                                if indice > 100:
+                                if indice > 300:
                                     break
                             except Exception:
                                 print(f"Final da lista de sócios atingido com {indice - 1} sócios.")
@@ -86,6 +88,7 @@ def processar_arquivos():
                             "uf": estado_tratado,
                             "endereco": endereco_tratado,
                             "telefone_escritorio": telefone_tratado,
+                            "situacao_escritorio": situacao_escritorio.text,
                             "socios": socios
                         }
                         print(f"Conteúdo coletado: {resultado}")
