@@ -84,11 +84,11 @@ def processar_arquivos():
                         resultado = {
                             "url": url_completa,
                             "nome_escritorio": nome_escritorio.text,
+                            "situacao_escritorio": situacao_escritorio.text,
                             "inscricao": inscricao_tratado,
                             "uf": estado_tratado,
                             "endereco": endereco_tratado,
                             "telefone_escritorio": telefone_tratado,
-                            "situacao_escritorio": situacao_escritorio.text,
                             "socios": socios
                         }
                         print(f"Conteúdo coletado: {resultado}")
