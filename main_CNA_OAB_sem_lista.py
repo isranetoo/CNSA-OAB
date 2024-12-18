@@ -156,6 +156,8 @@ def main():
     atualizar_arquivo_json()
     executar_script('corte_img.py')
     executar_script('separador.py')
+    executar_script('CNSA_OAB_selenium.py')
+    executar_script('compilador.py')
 
 if __name__ == "__main__":
     main()

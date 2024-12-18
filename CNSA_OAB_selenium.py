@@ -1,6 +1,5 @@
 import os
 import json
-import requests
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
@@ -48,13 +47,48 @@ def processar_arquivos():
                     try:
                         driver.get(url_completa)
                         time.sleep(3) 
-                        elemento = driver.find_element(By.XPATH, '//*[@id="bodyContent"]/div[3]/div/div/div[2]/div[6]')
-                        conteudo_elemento = elemento.text  
+                        nome_escritorio = driver.find_element(By.XPATH, '//*[@id="bodyContent"]/div[3]/div/div/div[1]/h4/b')
+
+                        inscricao_escritorio = driver.find_element(By.XPATH, '//*[@id="bodyContent"]/div[3]/div/div/div[2]/div[1]')
+                        conteudo_inscricao = inscricao_escritorio.text
+                        inscricao_tratado = conteudo_inscricao.replace("Inscrição:\n", "")
+
+                        estado_escritorio = driver.find_element(By.XPATH, '//*[@id="bodyContent"]/div[3]/div/div/div[2]/div[2]')
+                        conteudo_estado = estado_escritorio.text
+                        estado_tratado = conteudo_estado.replace("\n", " ")
+
+                        endereco_escritorio = driver.find_element(By.XPATH, '//*[@id="enderecoContainer"]')
+                        conteudo_endereco = endereco_escritorio.text
+                        endereco_tratado = conteudo_endereco.replace("\n", " ")
+
+                        telefone = driver.find_element(By.XPATH, '//*[@id="bodyContent"]/div[3]/div/div/div[2]/div[6]')
+                        conteudo_telefone = telefone.text
+                        telefone_tratado = conteudo_telefone.replace("Telefones:\n", "")
+
+                        socios = []
+                        indice = 1
+                        while True:
+                            try:
+                                xpath_socio = f'//*[@id="bodyContent"]/div[3]/div/div/div[2]/div[7]/div/table/tbody/tr[{indice}]/td[2]'
+                                elemento_socio = driver.find_element(By.XPATH, xpath_socio)
+                                socios.append(elemento_socio.text)
+                                indice += 1
+                                if indice > 100:
+                                    break
+                            except Exception:
+                                print(f"Final da lista de sócios atingido com {indice - 1} sócios.")
+                                break
+
                         resultado = {
-                            "conteudo_coletado": conteudo_elemento,
-                            "url": url_completa
+                            "url": url_completa,
+                            "nome_escritorio": nome_escritorio.text,
+                            "inscricao": inscricao_tratado,
+                            "uf": estado_tratado,
+                            "endereco": endereco_tratado,
+                            "telefone_escritorio": telefone_tratado,
+                            "socios": socios
                         }
-                        print(f"Conteúdo coletado: {conteudo_elemento}")
+                        print(f"Conteúdo coletado: {resultado}")
                     except Exception as e:
                         print(f"Erro ao acessar a URL ou coletar o elemento: {e}")
                         resultado = {
@@ -77,3 +111,5 @@ def processar_arquivos():
 
 if __name__ == "__main__":
     processar_arquivos()
+
+

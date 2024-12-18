@@ -65,7 +65,7 @@ def processar_varias_imagens_e_cortes(diretorio):
                 "resultado": result
             })
 
-    nome_arquivo_json = obter_proximo_nome_arquivo(f"numero_telefo", ".json")
+    nome_arquivo_json = obter_proximo_nome_arquivo(f"numero_telefone", ".json")
     with open(nome_arquivo_json, 'w', encoding='utf-8') as json_file:
         json.dump(resultados, json_file, indent=4, ensure_ascii=False)
     print(f"Resultados salvos em: {nome_arquivo_json}")
