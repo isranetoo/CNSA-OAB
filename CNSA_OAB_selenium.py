@@ -55,11 +55,11 @@ def processar_arquivos():
 
                         estado_escritorio = driver.find_element(By.XPATH, '//*[@id="bodyContent"]/div[3]/div/div/div[2]/div[2]')
                         conteudo_estado = estado_escritorio.text
-                        estado_tratado = conteudo_estado.replace("\n", " ")
+                        estado_tratado = conteudo_estado.replace("Estado:\n", "")
 
                         endereco_escritorio = driver.find_element(By.XPATH, '//*[@id="enderecoContainer"]')
                         conteudo_endereco = endereco_escritorio.text
-                        endereco_tratado = conteudo_endereco.replace("\n", " ")
+                        endereco_tratado = conteudo_endereco.replace("Endereço:\n", "")
 
                         telefone = driver.find_element(By.XPATH, '//*[@id="bodyContent"]/div[3]/div/div/div[2]/div[6]')
                         conteudo_telefone = telefone.text
@@ -86,7 +86,7 @@ def processar_arquivos():
                             "nome_escritorio": nome_escritorio.text,
                             "situacao_escritorio": situacao_escritorio.text,
                             "inscricao": inscricao_tratado,
-                            "uf": estado_tratado,
+                            "estado": estado_tratado,
                             "endereco": endereco_tratado,
                             "telefone_escritorio": telefone_tratado,
                             "socios": socios
