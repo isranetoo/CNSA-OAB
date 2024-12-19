@@ -1,7 +1,6 @@
 import os
 import json
 import requests
-from datetime import datetime
 import subprocess
 
 BASE_URL = 'https://cna.oab.org.br/'
@@ -52,8 +51,7 @@ class SessaoCNA:
             if resposta.status_code == 200:
                 dados = resposta.json()
                 if dados:
-                    timestamp = datetime.now().strftime("%d-%m-%Y")
-                    salvar_em_arquivo(PASTAS['OAB'], f"Advogado_{self.nome_advo.replace(' ', '_')}_data_{timestamp}.json", dados)
+                    salvar_em_arquivo(PASTAS['OAB'], f"Advogado_{self.nome_advo.replace(' ', '_')}.json", dados)
                     print(f"Dados do advogado {self.nome_advo} obtidos com sucesso.")
                 else:
                     print(f"Nenhum dado encontrado para {self.nome_advo}")
@@ -86,8 +84,7 @@ class DetalhesCNA:
             resposta = self.sessao.post(url, headers={'Content-Type': 'application/json'})
             if resposta.status_code == 200:
                 detalhes = resposta.json()
-                timestamp = datetime.now().strftime("%d-%m-%Y")
-                salvar_em_arquivo(PASTAS['Detalhes'], f"{nome_advogado}_data_{timestamp}.json", detalhes)
+                salvar_em_arquivo(PASTAS['Detalhes'], f"{nome_advogado}.json", detalhes)
                 print(f"Detalhes salvos: {url}")
             else:
                 print(f"Erro ao acessar detalhes: {resposta.status_code}")

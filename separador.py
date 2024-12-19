@@ -1,6 +1,5 @@
 import os
 import json
-from datetime import datetime
 
 PASTA_OAB = 'output_CNA_OAB'
 PASTA_SAIDA = 'detalhes_CNA_separados'
@@ -31,8 +30,7 @@ def processar_arquivo_json():
             for item in dados.get('Data', []):
                 nome = item.get('Nome')
                 if nome:
-                    timestamp = datetime.now().strftime("%d-%m-%Y")
-                    nome_arquivo = f"{nome.replace(' ', '_')}_data_{timestamp}.json"
+                    nome_arquivo = f"{nome.replace(' ', '_')}.json"
                     
                     salvar_em_arquivo(PASTA_SAIDA, nome_arquivo, item)
     
