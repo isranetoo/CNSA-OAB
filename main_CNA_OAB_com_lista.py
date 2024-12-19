@@ -1,18 +1,27 @@
 import os
 import json
 import requests
-import subprocess
+
+import os
+import pytesseract
+import json
+from PIL import Image
+from PIL import ImageFilter
+
+
+if os.name == "nt":
+    pytesseract.pytesseract.tesseract_cmd = 'C:\\Program Files\\Tesseract-OCR\\tesseract.exe'
+
 
 BASE_URL = 'https://cna.oab.org.br/'
 PASTAS = {
-    'OAB': 'output_CNA_OAB',
-    'Detalhes': 'resultados_CNA_detalhes',
-    'Saida': 'detalhes_CNA_processados',
-    'SaidaImg': 'imgs_CNA_OAB'
+    'temp': "temp_files",
+    'saida_CNA': 'output_CNA',
 }
 
 for pasta in PASTAS.values():
     os.makedirs(pasta, exist_ok=True)
+
 
 def salvar_em_arquivo(pasta, nome_arquivo, conteudo):
     """Salva conteúdo em arquivo JSON."""
@@ -23,173 +32,119 @@ def salvar_em_arquivo(pasta, nome_arquivo, conteudo):
     except Exception as e:
         print(f"Erro ao salvar arquivo: {e}")
 
-def baixar_imagem(url, nome_arquivo):
-    """Baixa imagem da URL e salva localmente."""
-    try:
-        resposta = requests.get(url, stream=True)
-        if resposta.status_code == 200:
-            with open(os.path.join(PASTAS['SaidaImg'], f"{nome_arquivo}.png"), 'wb') as arquivo:
-                for chunk in resposta.iter_content(1024):
-                    arquivo.write(chunk)
-            print(f"Imagem salva: {nome_arquivo}")
-        else:
-            print(f"Erro ao baixar imagem: {resposta.status_code}")
-    except Exception as e:
-        print(f"Erro ao salvar imagem: {e}")
 
-class SessaoCNA:
-    """Classe para interagir com o sistema CNA."""
-    def __init__(self, nome_advo):
-        self.sessao = requests.Session()
-        self.nome_advo = nome_advo
-
-    def enviar_requisicao(self):
-        """Realiza a requisição e salva os dados do advogado."""
-        payload = {"NomeAdvo": self.nome_advo, "IsMobile": "false"}
-        try:
-            resposta = self.sessao.post(BASE_URL + 'Home/Search', json=payload, headers={'Content-Type': 'application/json'})
-            if resposta.status_code == 200:
-                dados = resposta.json()
-                if dados:
-                    salvar_em_arquivo(PASTAS['OAB'], f"Advogado_{self.nome_advo.replace(' ', '_')}.json", dados)
-                    print(f"Dados do advogado {self.nome_advo} obtidos com sucesso.")
-                else:
-                    print(f"Nenhum dado encontrado para {self.nome_advo}")
-            else:
-                print(f"Erro na requisição: {resposta.status_code}")
-        except Exception as e:
-            print(f"Erro ao realizar requisição: {e}")
-
-class DetalhesCNA:
+class BuscaCNA:
     """Classe para buscar e salvar detalhes adicionais."""
     def __init__(self):
         self.sessao = requests.Session()
 
-    def processar_arquivos(self):
-        """Processa arquivos e coleta detalhes adicionais."""
-        arquivos = [f for f in os.listdir(PASTAS['OAB']) if f.endswith('.json')]
-        if arquivos:
-            for arquivo in arquivos:
-                with open(os.path.join(PASTAS['OAB'], arquivo), 'r', encoding='utf-8') as f:
-                    dados = json.load(f)
-                for item in dados.get('Data', []):
-                    if 'DetailUrl' in item:
-                        self.buscar_detalhes(BASE_URL + item['DetailUrl'], item.get('Nome', 'desconhecido'))
-        else:
-            print(f"Nenhum arquivo encontrado em {PASTAS['OAB']}")
+    def busca_nome(self, nome_advo: str) -> dict[str, str]:
+        """Realiza a requisição e salva os dados do advogado."""
+        payload = {"NomeAdvo": nome_advo, "IsMobile": "false"}
+        try:
+            resposta = self.sessao.post(BASE_URL + 'Home/Search', json=payload, headers={'Content-Type': 'application/json'})
+            if resposta.status_code == 200:
+                resposta_json = resposta.json()
+            else:
+                print(f"Erro na requisição: {resposta.status_code}")
+        except Exception as e:
+            print(f"Erro ao realizar requisição: {e}")
+            return {}
 
-    def buscar_detalhes(self, url, nome_advogado):
+        if not resposta_json:
+            print(f"Nenhum dado encontrado para {nome_advo}")
+            return {}
+
+        resultado_pesquisa: list[dict[str, str]] = resposta_json.get("Data", {})
+        for resultado_adv in resultado_pesquisa:
+            if 'DetailUrl' not in resultado_adv.keys():
+                continue
+
+            detalhes = self.buscar_detalhes(BASE_URL + resultado_adv['DetailUrl'])
+            resultado_adv["image_url"] = detalhes.get("DetailUrl", None)
+            resultado_adv["Sociedades"] = detalhes.get("Sociedades", False)
+
+            img_file = self.baixar_imagem(BASE_URL + resultado_adv["image_url"])
+            telefones = self.extrair_telefones_imagem(img_file)
+            resultado_adv.update(telefones)
+
+            if resultado_adv["Sociedades"]:
+                for soc in resultado_adv["Sociedades"]:
+                    sociedades = self.coleta_sociedade(soc["Url"])
+                    resultado_adv["Sociedades_Details"] = sociedades
+
+        return resultado_pesquisa
+
+    def buscar_detalhes(self, url):
         """Busca e salva detalhes adicionais do advogado."""
         try:
             resposta = self.sessao.post(url, headers={'Content-Type': 'application/json'})
             if resposta.status_code == 200:
-                detalhes = resposta.json()
-                salvar_em_arquivo(PASTAS['Detalhes'], f"{nome_advogado}.json", detalhes)
-                print(f"Detalhes salvos: {url}")
-            else:
-                print(f"Erro ao acessar detalhes: {resposta.status_code}")
+                detalhes = resposta.json()["Data"]
         except Exception as e:
             print(f"Erro ao buscar detalhes: {e}")
 
-def processar_arquivo_json(caminho_arquivo):
-    """Processa arquivo JSON e extrai informações relevantes."""
-    with open(caminho_arquivo, 'r', encoding='utf-8') as f:
-        dados = json.load(f)
-    sociedades = dados.get("Data", {}).get("Sociedades", [])
-    sociedade = sociedades[0] if sociedades else {}
-    
-    detail_url = dados.get("Data", {}).get("DetailUrl")
-    insc = sociedade.get("Inscricao")
-    url_completa = BASE_URL + detail_url if detail_url else None
-    
-    if url_completa:
-        nome_imagem = os.path.splitext(os.path.basename(caminho_arquivo))[0]
-        baixar_imagem(url_completa, nome_imagem)
-    
-    return {"Inscricao": insc, "DetailUrl": detail_url, "URL": url_completa}
+        return detalhes
+
+    def baixar_imagem(self, url):
+        """Baixa imagem da URL e salva localmente."""
+        try:
+            resposta = requests.get(url, stream=True)
+        except Exception as e:
+            print(f"Erro ao salvar imagem: {e}")
+
+        if resposta.status_code == 200:
+            with open(os.path.join(PASTAS['temp'], f"temp.png"), 'wb') as arquivo:
+                for chunk in resposta.iter_content(1024):
+                    arquivo.write(chunk)
+            print(f"Imagem salva: temp.png")
+        else:
+            print(f"Erro ao baixar imagem: {resposta.status_code}")
+
+        return os.path.join(PASTAS['temp'], f"temp.png")
+
+    def extrair_telefones_imagem(self, img_path):
+        lista_cortes_imagem = [
+            (0, 255, 100, 275),  # exemplo de coordenadas (esquerda, cima, direita, baixo)
+            (0, 275, 100, 300)
+        ]
+
+        resultados = {}
+        for i, coordenadas in enumerate(lista_cortes_imagem):
+            image = Image.open(img_path)
+            cropped_imagem = image.crop(coordenadas)
+            sharpened_imagem = cropped_imagem.filter(ImageFilter.SHARPEN)
+
+            ocr_config = '--psm 11 --oem 3 -c tessedit_char_whitelist=1234567890()-'
+            result = pytesseract.image_to_string(sharpened_imagem, config=ocr_config)
+            result = result.strip().replace(chr(32), "").replace("\n", "")
+
+            resultados[f"telefone_{i}"] = result
+
+        return resultados
+
+    def coleta_sociedade():
+        hue = busca_cna.sessao.get(BASE_URL + "/Home/CNSALink?hRwiORArxou7RH2IpDCI63Q9%2BTY0BCoM79xcJHJjCk45oDZWGIAELrlv7DxAN2NK")
+        # Tem que pegar o id do content do hue no actions do form submit
+        hue2 = busca_cna.sessao.get("https://cnsa.oab.org.br/Home/Detail?R4gtk0MoEaBheI9z%2FWda1g%3D%3D")
+        return hue2.json()
 
 
-def atualizar_arquivo_json():
-    """Atualiza arquivos JSON com os dados processados."""
-    arquivos = [f for f in os.listdir(PASTAS['Saida']) if f.endswith('.json')]
-    if arquivos:
-        for arquivo in arquivos:
-            caminho_arquivo_processado = os.path.join(PASTAS['Saida'], arquivo)
-            caminho_arquivo_resultado = os.path.join(PASTAS['Detalhes'], arquivo)
-            if os.path.exists(caminho_arquivo_resultado):
-                with open(caminho_arquivo_processado, 'r', encoding='utf-8') as arq_processado, open(caminho_arquivo_resultado, 'r', encoding='utf-8') as arq_resultado:
-                    dados_processados = json.load(arq_processado)
-                    dados_resultado = json.load(arq_resultado)
-                if dados_processados.get("URL"):
-                    dados_resultado["Data"]["URL"] = dados_processados["URL"]
-                if dados_processados.get("Inscricao"):
-                    dados_resultado["Data"]["Inscricao"] = dados_processados["Inscricao"]
-                salvar_em_arquivo(PASTAS['Detalhes'], arquivo, dados_resultado)
-                print(f"Arquivo {arquivo} atualizado com sucesso.")
-    else:
-        print(f"Nenhum arquivo encontrado na pasta {PASTAS['Saida']}")
-
-def executar_script(script_nome):
-    """Executa um script Python."""
-    try:
-        subprocess.run(['python', script_nome], check=True)
-        print(f"Script '{script_nome}' executado com sucesso.")
-    except subprocess.CalledProcessError as e:
-        print(f"Erro ao executar {script_nome}: {e}")
-    except FileNotFoundError:
-        print(f"O script '{script_nome}' não foi encontrado.")
-
-def limpar_pastas():
-    """Remove as pastas após a execução do programa."""
-    try:
-        pastas_para_remover = ['resultados_CNA_detalhes', 'output_CNA_OAB', 'detalhes_CNA_processados']
-        for pasta in pastas_para_remover:
-            caminho_completo = os.path.join(os.getcwd(), pasta)
-            if os.path.exists(caminho_completo):
-                for root, dirs, files in os.walk(caminho_completo, topdown=False):
-                    for file in files:
-                        os.remove(os.path.join(root, file))
-                    for dir in dirs:
-                        os.rmdir(os.path.join(root, dir))
-                os.rmdir(caminho_completo)
-                print(f"Pasta '{pasta}' removida com sucesso.")
-            else:
-                print(f"Pasta '{pasta}' não encontrada.")
-    except Exception as e:
-        print(f"Erro ao remover pastas: {e}")
-
-def main():
-    caminho_lista_nomes = "lista_nomes.txt"  # Nome do arquivo com a lista de nomes
+if __name__ == "__main__":
+    # Nome do arquivo com a lista de nomes
+    caminho_lista_nomes = "lista_nomes.txt"  
     if not os.path.exists(caminho_lista_nomes):
-        print(f"Arquivo {caminho_lista_nomes} não encontrado!")
-        return
+        raise ValueError(f"Arquivo {caminho_lista_nomes} não encontrado!")
 
     with open(caminho_lista_nomes, 'r', encoding='utf-8') as arquivo:
         nomes = [linha.strip() for linha in arquivo.readlines() if linha.strip()]
-
     if not nomes:
-        print("Nenhum nome encontrado na lista.")
-        return
+        raise ValueError(f"Nenhum nome encontrado na lista!")
 
+    resultados = {}
+    busca_cna = BuscaCNA()
     for nome in nomes:
         print(f"Processando nome: {nome}")
-        sessao_cna = SessaoCNA(nome)
-        sessao_cna.enviar_requisicao()
-
-    detalhes_cna = DetalhesCNA()
-    detalhes_cna.processar_arquivos()
-    for nome_arquivo in os.listdir(PASTAS['Detalhes']):
-        if nome_arquivo.endswith(".json"):
-            novo_dado = processar_arquivo_json(os.path.join(PASTAS['Detalhes'], nome_arquivo))
-            salvar_em_arquivo(PASTAS['Saida'], nome_arquivo, novo_dado)
-            print(f"Processamento de {nome_arquivo} concluído.")
-    atualizar_arquivo_json()
-    executar_script('corte_img.py')
-    executar_script('separador.py')
-    executar_script('CNSA_OAB_selenium.py')
-    executar_script('compilador.py')
-    executar_script('numero_e_resultado.py')
-    limpar_pastas()
-
-if __name__ == "__main__":
-    main()
+        resultados_nome = busca_cna.busca_nome(nome)
+        salvar_em_arquivo(PASTAS['saida_CNA'], nome + ".json", resultados_nome)
+        resultados[nome] = resultados_nome
