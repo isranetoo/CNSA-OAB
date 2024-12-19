@@ -139,6 +139,25 @@ def executar_script(script_nome):
     except FileNotFoundError:
         print(f"O script '{script_nome}' não foi encontrado.")
 
+def limpar_pastas():
+    """Remove as pastas apos serem executadas do programa"""
+    try:
+        pastas_para_serem_removidas = ['resultados_CNA_detalhes', 'output_CNA_OAB', 'detalhes_CNA_processados', 'cortes']
+        for pasta in pastas_para_serem_removidas:
+            caminho_completo = os.path.join(os.getcwd(), pasta)
+            if os.path.exists(caminho_completo):
+                for root, dirs, files in os.walk(caminho_completo, topdown=False):
+                    for file in files:
+                        os.remove(os.path.join(root, file))
+                    for dir in dirs:
+                        os.rmdir(os.path.join(root, dir))
+                os.rmdir(caminho_completo)
+                print(f"Pasta '{pasta}' removida com sucesso")
+            else:
+                print(f"Pasta '{pasta}' não econtrada.")
+    except Exception as e:
+        print(f"Erro ao remover pastas: {e}")
+
 def main():
     NomeAdvo = input("Digite o nome do Advogado: ").strip()
     sessao_cna = SessaoCNA(NomeAdvo)
@@ -156,6 +175,7 @@ def main():
     executar_script('CNSA_OAB_selenium.py')
     executar_script('compilador.py')
     executar_script('numero_e_resultado.py')
+    limpar_pastas()
 
 if __name__ == "__main__":
     main()
