@@ -2,6 +2,7 @@ import os
 import json
 import requests
 import pytesseract
+import re
 from PIL import Image, ImageFilter
 from bs4 import BeautifulSoup
 
@@ -21,6 +22,7 @@ for pasta in PASTAS.values():
 def salvar_em_arquivo(pasta, nome_arquivo, conteudo):
     """Salva conteúdo em arquivo JSON."""
     try:
+        nome_arquivo = re.sub(r'[<>:"/\\|?*]', '_', nome_arquivo)
         with open(os.path.join(pasta, nome_arquivo), 'w', encoding='utf-8') as arquivo:
             json.dump(conteudo, arquivo, ensure_ascii=False, indent=4)
         print(f"Arquivo salvo em: {pasta}/{nome_arquivo}")
@@ -130,14 +132,26 @@ class BuscaCNA:
                     action_url = form['action']
                     id_extracted = action_url.split('/')[-1]
                     print(f"ID extraído: {id_extracted}")
-                    return {"id": id_extracted, "action_url": action_url}
+                    sociedades_info = self.buscar_sociedades_info(f"https://cnsa.oab.org.br/Home/Detail/{id_extracted}")
+                    return {"id": id_extracted, "action_url": action_url, "sociedades_info": sociedades_info}
                 else:
                     print("Formulário ou atributo 'action' não encontrado.")
                     return {"erro": "Formulário ou action ausente."}
         except Exception as e:
             print(f"Erro ao coletar sociedade: {e}")
             return {"erro": str(e)}
-        
+    
+
+    def buscar_sociedades_info(self, action_url):
+        """ Busca e salva detalhes da Sociedade"""
+        try:
+            resposta = self.sessao.get(action_url, headers={'Content-Type': 'application/json'})
+            if resposta.status_code == 200:
+                return resposta.json().get("Data", {})
+        except Exception as e:
+            print(f"Erro ao buscar detalhes de sociedade: {e}")
+        return {}
+
 
 if __name__ == "__main__":
     caminho_lista_nomes = "lista_nomes.txt"
