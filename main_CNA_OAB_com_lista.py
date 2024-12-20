@@ -37,6 +37,7 @@ class BuscaCNA:
     """Classe para buscar e salvar detalhes adicionais."""
     def __init__(self):
         self.sessao = requests.Session()
+        
 
     def busca_nome(self, nome_advo: str) -> dict[str, str]:
         """Realiza a requisição e salva os dados do advogado."""
@@ -74,6 +75,7 @@ class BuscaCNA:
                     resultado_adv["Sociedades_Details"] = sociedades
 
         return resultado_pesquisa
+    
 
     def buscar_detalhes(self, url):
         """Busca e salva detalhes adicionais do advogado."""
@@ -85,6 +87,7 @@ class BuscaCNA:
             print(f"Erro ao buscar detalhes: {e}")
 
         return detalhes
+    
 
     def baixar_imagem(self, url):
         """Baixa imagem da URL e salva localmente."""
@@ -102,6 +105,7 @@ class BuscaCNA:
             print(f"Erro ao baixar imagem: {resposta.status_code}")
 
         return os.path.join(PASTAS['temp'], f"temp.png")
+    
 
     def extrair_telefones_imagem(self, img_path):
         lista_cortes_imagem = [
@@ -122,12 +126,19 @@ class BuscaCNA:
             resultados[f"telefone_{i}"] = result
 
         return resultados
+    
 
-    def coleta_sociedade():
-        hue = busca_cna.sessao.get(BASE_URL + "/Home/CNSALink?hRwiORArxou7RH2IpDCI63Q9%2BTY0BCoM79xcJHJjCk45oDZWGIAELrlv7DxAN2NK")
-        # Tem que pegar o id do content do hue no actions do form submit
-        hue2 = busca_cna.sessao.get("https://cnsa.oab.org.br/Home/Detail?R4gtk0MoEaBheI9z%2FWda1g%3D%3D")
-        return hue2.json()
+def coleta_sociedade(self, url):
+    try:
+        resposta = self.sessao.get(url)
+        if resposta.status_code == 200:
+            return resposta.json()
+        else:
+            print(f"Erro ao coletar sociedade: {resposta.status_code}")
+            return {}
+    except Exception as e:
+        print(f"Erro ao coletar a sociedade: {e}")
+        return {}
 
 
 if __name__ == "__main__":
