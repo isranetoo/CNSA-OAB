@@ -3,7 +3,7 @@ import json
 import requests
 import pytesseract
 from PIL import Image, ImageFilter
-from bs4 import BeautifulSoup  # Para parsear HTML
+from bs4 import BeautifulSoup
 
 if os.name == "nt":
     pytesseract.pytesseract.tesseract_cmd = 'C:\\Program Files\\Tesseract-OCR\\tesseract.exe'
@@ -31,7 +31,6 @@ class BuscaCNA:
     """Classe para buscar e salvar detalhes adicionais."""
     def __init__(self):
         self.sessao = requests.Session()
-
 
     def busca_nome(self, nome_advo: str) -> dict:
         """Realiza a requisição e salva os dados do advogado."""
@@ -71,7 +70,7 @@ class BuscaCNA:
                         resultado_adv.setdefault("Sociedades_Details", []).append(sociedades)
 
         return resultado_pesquisa
-    
+
 
     def buscar_detalhes(self, url):
         """Busca e salva detalhes adicionais do advogado."""
@@ -82,7 +81,6 @@ class BuscaCNA:
         except Exception as e:
             print(f"Erro ao buscar detalhes: {e}")
         return {}
-    
 
     def baixar_imagem(self, url):
         """Baixa imagem da URL e salva localmente."""
@@ -98,7 +96,6 @@ class BuscaCNA:
         except Exception as e:
             print(f"Erro ao salvar imagem: {e}")
         return None
-    
 
     def extrair_telefones_imagem(self, img_path):
         """Extrai telefones de uma imagem."""
@@ -120,10 +117,10 @@ class BuscaCNA:
             resultados[f"telefone_{i}"] = result
 
         return resultados
-    
+
 
     def coleta_sociedade(self, url):
-        """Faz um POST na URL e extrai o ID do formulário no atributo action.(hue)"""
+        """Faz um POST na URL e extrai o ID do formulário no atributo action."""
         try:
             resposta = self.sessao.post(BASE_URL + url, headers={'Content-Type': 'application/x-www-form-urlencoded'})
             if resposta.status_code == 200:

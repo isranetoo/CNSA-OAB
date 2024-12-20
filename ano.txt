@@ -1,1 +1,0 @@
-agora com o link action_url do arquivo JSON faça com que o codigo faca um POST utilizando o requests coletando todas as informacoes que esta no "Preview" da aba inspesionar e os salvando no JSON por exemplo:
