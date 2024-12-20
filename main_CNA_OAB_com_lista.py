@@ -1,17 +1,12 @@
 import os
 import json
 import requests
-
-import os
 import pytesseract
-import json
-from PIL import Image
-from PIL import ImageFilter
-
+from PIL import Image, ImageFilter
+from bs4 import BeautifulSoup  # Para parsear HTML
 
 if os.name == "nt":
     pytesseract.pytesseract.tesseract_cmd = 'C:\\Program Files\\Tesseract-OCR\\tesseract.exe'
-
 
 BASE_URL = 'https://cna.oab.org.br/'
 PASTAS = {
@@ -19,9 +14,9 @@ PASTAS = {
     'saida_CNA': 'output_CNA',
 }
 
+
 for pasta in PASTAS.values():
     os.makedirs(pasta, exist_ok=True)
-
 
 def salvar_em_arquivo(pasta, nome_arquivo, conteudo):
     """Salva conteúdo em arquivo JSON."""
@@ -32,14 +27,13 @@ def salvar_em_arquivo(pasta, nome_arquivo, conteudo):
     except Exception as e:
         print(f"Erro ao salvar arquivo: {e}")
 
-
 class BuscaCNA:
     """Classe para buscar e salvar detalhes adicionais."""
     def __init__(self):
         self.sessao = requests.Session()
-        
 
-    def busca_nome(self, nome_advo: str) -> dict[str, str]:
+
+    def busca_nome(self, nome_advo: str) -> dict:
         """Realiza a requisição e salva os dados do advogado."""
         payload = {"NomeAdvo": nome_advo, "IsMobile": "false"}
         try:
@@ -48,6 +42,7 @@ class BuscaCNA:
                 resposta_json = resposta.json()
             else:
                 print(f"Erro na requisição: {resposta.status_code}")
+                return {}
         except Exception as e:
             print(f"Erro ao realizar requisição: {e}")
             return {}
@@ -56,9 +51,9 @@ class BuscaCNA:
             print(f"Nenhum dado encontrado para {nome_advo}")
             return {}
 
-        resultado_pesquisa: list[dict[str, str]] = resposta_json.get("Data", {})
+        resultado_pesquisa = resposta_json.get("Data", [])
         for resultado_adv in resultado_pesquisa:
-            if 'DetailUrl' not in resultado_adv.keys():
+            if 'DetailUrl' not in resultado_adv:
                 continue
 
             detalhes = self.buscar_detalhes(BASE_URL + resultado_adv['DetailUrl'])
@@ -71,8 +66,9 @@ class BuscaCNA:
 
             if resultado_adv["Sociedades"]:
                 for soc in resultado_adv["Sociedades"]:
-                    sociedades = self.coleta_sociedade(soc["Url"])
-                    resultado_adv["Sociedades_Details"] = sociedades
+                    if "Url" in soc:
+                        sociedades = self.coleta_sociedade(soc["Url"])
+                        resultado_adv.setdefault("Sociedades_Details", []).append(sociedades)
 
         return resultado_pesquisa
     
@@ -82,34 +78,32 @@ class BuscaCNA:
         try:
             resposta = self.sessao.post(url, headers={'Content-Type': 'application/json'})
             if resposta.status_code == 200:
-                detalhes = resposta.json()["Data"]
+                return resposta.json().get("Data", {})
         except Exception as e:
             print(f"Erro ao buscar detalhes: {e}")
-
-        return detalhes
+        return {}
     
 
     def baixar_imagem(self, url):
         """Baixa imagem da URL e salva localmente."""
         try:
-            resposta = requests.get(url, stream=True)
+            resposta = self.sessao.get(url, stream=True)
+            if resposta.status_code == 200:
+                img_path = os.path.join(PASTAS['temp'], "temp.png")
+                with open(img_path, 'wb') as arquivo:
+                    for chunk in resposta.iter_content(1024):
+                        arquivo.write(chunk)
+                print(f"Imagem salva: {img_path}")
+                return img_path
         except Exception as e:
             print(f"Erro ao salvar imagem: {e}")
-
-        if resposta.status_code == 200:
-            with open(os.path.join(PASTAS['temp'], f"temp.png"), 'wb') as arquivo:
-                for chunk in resposta.iter_content(1024):
-                    arquivo.write(chunk)
-            print(f"Imagem salva: temp.png")
-        else:
-            print(f"Erro ao baixar imagem: {resposta.status_code}")
-
-        return os.path.join(PASTAS['temp'], f"temp.png")
+        return None
     
 
     def extrair_telefones_imagem(self, img_path):
+        """Extrai telefones de uma imagem."""
         lista_cortes_imagem = [
-            (0, 255, 100, 275),  # exemplo de coordenadas (esquerda, cima, direita, baixo)
+            (0, 255, 100, 275),  # Coordenadas: esquerda, cima, direita, baixo
             (0, 275, 100, 300)
         ]
 
@@ -128,27 +122,34 @@ class BuscaCNA:
         return resultados
     
 
-def coleta_sociedade(self, url):
-    try:
-        resposta = self.sessao.get(url)
-        if resposta.status_code == 200:
-            return resposta.json()
-        else:
-            print(f"Erro ao coletar sociedade: {resposta.status_code}")
-            return {}
-    except Exception as e:
-        print(f"Erro ao coletar a sociedade: {e}")
-        return {}
-
+    def coleta_sociedade(self, url):
+        """Faz um POST na URL e extrai o ID do formulário no atributo action.(hue)"""
+        try:
+            resposta = self.sessao.post(BASE_URL + url, headers={'Content-Type': 'application/x-www-form-urlencoded'})
+            if resposta.status_code == 200:
+                soup = BeautifulSoup(resposta.text, 'html.parser')
+                form = soup.find('form') 
+                if form and 'action' in form.attrs:
+                    action_url = form['action']
+                    id_extracted = action_url.split('/')[-1]
+                    print(f"ID extraído: {id_extracted}")
+                    return {"id": id_extracted, "action_url": action_url}
+                else:
+                    print("Formulário ou atributo 'action' não encontrado.")
+                    return {"erro": "Formulário ou action ausente."}
+        except Exception as e:
+            print(f"Erro ao coletar sociedade: {e}")
+            return {"erro": str(e)}
+        
 
 if __name__ == "__main__":
-    # Nome do arquivo com a lista de nomes
-    caminho_lista_nomes = "lista_nomes.txt"  
+    caminho_lista_nomes = "lista_nomes.txt"
     if not os.path.exists(caminho_lista_nomes):
         raise ValueError(f"Arquivo {caminho_lista_nomes} não encontrado!")
 
     with open(caminho_lista_nomes, 'r', encoding='utf-8') as arquivo:
         nomes = [linha.strip() for linha in arquivo.readlines() if linha.strip()]
+
     if not nomes:
         raise ValueError(f"Nenhum nome encontrado na lista!")
 
