@@ -11,10 +11,9 @@ if os.name == "nt":
 
 BASE_URL = 'https://cna.oab.org.br/'
 PASTAS = {
-    'temp': "temp_files",
-    'saida_CNA': 'output_CNA',
+    'temp': os.path.join("src", "cna", "temp_files"),
+    'saida_CNA': os.path.join("src", "cna", "output_CNA"),
 }
-
 
 for pasta in PASTAS.values():
     os.makedirs(pasta, exist_ok=True)
@@ -127,7 +126,7 @@ class BuscaCNA:
             resposta = self.sessao.post(BASE_URL + url, headers={'Content-Type': 'application/x-www-form-urlencoded'})
             if resposta.status_code == 200:
                 soup = BeautifulSoup(resposta.text, 'html.parser')
-                form = soup.find('form') 
+                form = soup.find('form')
                 if form and 'action' in form.attrs:
                     action_url = form['action']
                     id_extracted = action_url.split('/')[-1]
@@ -140,7 +139,7 @@ class BuscaCNA:
         except Exception as e:
             print(f"Erro ao coletar sociedade: {e}")
             return {"erro": str(e)}
-    
+
 
     def buscar_sociedades_info(self, action_url):
         """ Busca e salva detalhes da Sociedade"""
@@ -154,15 +153,20 @@ class BuscaCNA:
 
 
 if __name__ == "__main__":
-    caminho_lista_nomes = "lista_nomes.txt"
+    caminho_lista_nomes = os.path.join("src", "cna", "lista_nomes.txt")
     if not os.path.exists(caminho_lista_nomes):
-        raise ValueError(f"Arquivo {caminho_lista_nomes} não encontrado!")
+        print(f"Arquivo {caminho_lista_nomes} não encontrado! Criando arquivo com exemplo...")
+        os.makedirs(os.path.dirname(caminho_lista_nomes), exist_ok=True)
+        with open(caminho_lista_nomes, 'w', encoding='utf-8') as arquivo:
+            arquivo.write("JOÃO DA SILVA\nMARIA SANTOS")
+        print(f"Arquivo {caminho_lista_nomes} criado com sucesso! Por favor, edite-o com os nomes desejados.")
+        exit()
 
     with open(caminho_lista_nomes, 'r', encoding='utf-8') as arquivo:
         nomes = [linha.strip() for linha in arquivo.readlines() if linha.strip()]
 
     if not nomes:
-        raise ValueError(f"Nenhum nome encontrado na lista!")
+        raise ValueError("Nenhum nome encontrado na lista!")
 
     resultados = {}
     busca_cna = BuscaCNA()
